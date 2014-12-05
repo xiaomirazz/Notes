@@ -1,0 +1,51 @@
+int close(int fd)并非总是关闭一个连接，而是将fd的引用技术减1.
+当fd的引用计数为0时，才真正关闭连接.
+
+在多进程程序中，一次fork会使父进程中的socket引用计数加1，因此我们必须在父进程和子进程中都调用close才能将连接关闭.
+
+int shutdown(int sockfd,int howto)用来终止连接，howto可以决定关闭读或写，或者都关闭。成功返回0.
+
+通用数据读写函数：
+#include<sys/socket.h>
+ssize_t recvmsg(int sockfd,struct msghdr* msg,int flags);
+ssize_t sendmsg(int sockfd,struct msghdr* msg,int flags);
+
+msghdr结构：
+struct msghdr
+{
+  void *msg_name;   //socket地址
+  socklen_t msg_namelen;  //socket地址长度
+  struct iovec* msg_iov;    //分散的内存块
+  int msg_iovlen;   //分散内存块的数量
+  void* msg_control;    //指向辅助数据的起始位置
+  socklen_t msg_controllen;     //辅助数据的大小
+  int msg_flags;      //复制函数中的flags参数，并在调用过程中更新
+};
+msg_name指向一个socket地址结构变量，指定通信对方的socket地址。对于TCP该成员必须设置为NULL。
+msg_iov是iovec结构体类型的指针。
+struct iovec
+{
+  void *iov_base;
+  size_t iov_len;
+};
+
+int sockatmark(int sockfd);检测sockfd是否处于带外标记，如TCP紧急标志。
+
+int getsockname(int sockfd,struct sockaddr* address,socklen_t* address_len);
+获取sockfd对应的本端socket地址，并将其存储在address参数指定的内存中，成功返回0.
+int getpeername(int sockfd,struct sockaddr* address,socklen_t* address_len);
+获取sockfd对应的远端socket地址，其他参数同上。
+
+int getsockopt(int sockfd,int level,int option_name,void* option_value,socklen_t* restrict option_len);
+int setsockopt(int sockfd,int level,int option_name,const void* option_value,socklen)t option_len);
+专门用来读取和设置socket文件描述符的属性方法。
+服务器监听时一些socket是由accept返回，这样如果需要返回的socket有某些选项，则应当对监听socket设置那些选项，这样accept的
+连接socket会自动继承这些选项。
+对于客户端，这些socket选项应该在调用connect函数之前设置，因为connect调用成功返回之后，TCP三次握手完成。
+几个重要选项：
+SO_REUSEADDR：用来强制使用被处于TIME_WAIT状态的连接占用的socket地址。设置过后，即使sock处于TIME_WAIT状态，与之绑定的socket
+              地址也可以立即被重用。此外我们也可以通过修改/proc/sys/net/ipv4/tcp_tw_recycle参数来快速回收被关闭的socket。
+SO_RCVBUF和SO_SNDBUF：分别表示TCP接受缓冲和发送缓冲。当我们用来设置TCP的接受和发送缓冲区大小的时候，系统都将其加倍并不得
+              小于某个最小值（接收256，发送2048）此外，我们可以直接修改内核参数/proc/sys/net/ipv4/tcp_rmem和
+              /proc/sys/net/ipv4/tcp_wmem来强制TCP接收和发送缓冲区的大小没有限制。
+
