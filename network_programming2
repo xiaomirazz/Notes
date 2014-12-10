@@ -33,4 +33,12 @@ int setlogmask(int maskpri);
 void closelog();
 关闭日志功能。
 
+int getrlimit(int resource,struct rlimit *rlim);
+取系统资源限制
+int setrlimit(int resource,const struct rlimit *rlim);
+设定系统资源限制
+struct rlimit{
+  rlim_t rlim_cur;
+  rlim_t rlim_max;
+};
 
