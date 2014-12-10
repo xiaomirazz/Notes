@@ -37,8 +37,68 @@ int getrlimit(int resource,struct rlimit *rlim);
 取系统资源限制
 int setrlimit(int resource,const struct rlimit *rlim);
 设定系统资源限制
+resource为资源类型，rlim是资源限定结构体指针
 struct rlimit{
-  rlim_t rlim_cur;
-  rlim_t rlim_max;
+  rlim_t rlim_cur;软限制 
+  rlim_t rlim_max;硬限制
 };
+
+
+linux web服务根目录一般在/var/www/
+char* getcwd(char* buf,size_t size);
+获取当前进程工作目录，buf指向的内存用于存储当前的绝对路径名，size为大小
+int chdir(const char* path);
+改变进程工作目录，path指定要切换的目录路径
+int chroot(const char* path);
+path指定要切换到的目标根目录
+
+
+将服务器程序以守护进程的方式运行
+bool daemonize()
+{
+  /*创建子进程，关闭父进程，这样可以使程序在后台运行*/
+  pid_t pid = fork();
+  if(pid<0)
+  {
+    return false;
+  }
+  else if(pid>0)
+  {
+    exit(0);
+  }
+  
+  umask(0) //设置文件权限掩码
+  
+  /*创建新的会话，设置本进程为进程组的首领*/
+  pid_t sid = setsid();
+  if(sid<0)
+  {
+    return false;
+  }
+  
+  /*切换工作目录*/
+  if((chdir("/"))<0)
+  {
+    return false;
+  }
+  /*关闭标准输入输出*/
+  close(STDIN_FILENO);
+  close(STDOUT_FILENO);
+  close(STDERR_FILENO);
+  
+  /*定向新的输入输出*/
+  open("/dev/null",O_RDONLY);
+  open("/dev/null",O_RDWR);
+  open("/dev/null",O_RDWR);
+  return true;
+}
+
+实际上linux也提供了api
+int daemon(int nochdir,int noclose);
+nochdir标记是否改变工作目录，传0则该表到根目录。
+noclose参数为0时，标准输入，标准输出和标准错误输出都重定向到/dev/null.
+成功返回0，失败返回-1并置errno
+  
+  
+}
 
