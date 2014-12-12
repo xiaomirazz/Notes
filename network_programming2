@@ -98,7 +98,7 @@ int daemon(int nochdir,int noclose);
 nochdir标记是否改变工作目录，传0则该表到根目录。
 noclose参数为0时，标准输入，标准输出和标准错误输出都重定向到/dev/null.
 成功返回0，失败返回-1并置errno
-  
+
   
 }
 
