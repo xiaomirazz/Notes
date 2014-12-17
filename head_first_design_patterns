@@ -93,5 +93,65 @@ public static void main(string[] args){
   }
 }
 -------------------------------------------------------------------------------------------------------
-观察者模式：定义了对象之间的一对多依赖，这样一来，当一个对象改变状态时，它的所有依赖者都会收到通知并自动更新。
+设计原则：为了交互对象之间的松耦合设计而努力。
 
+观察者模式：定义了对象之间的一对多依赖，这样一来，当一个对象改变状态时，它的所有依赖者都会收到通知并自动更新。
+import java.util.Observable;
+import java.util.Observer;
+
+public class WeatherData extends Observable{
+  private float temperature;
+  private float humidity;
+  private float pressure;
+  
+  public WeatherData(){
+  }
+  
+  public void measurementsChanged(){
+    setChanged();
+    notifyObservers();
+  }
+  
+  public void setMeasurements(float temperature,float humidity,float pressure){
+    this.temperature = temperature;
+    this.humidity = humidity;
+    this.pressure = pressure;
+    measurementsChanged();
+  }
+  
+  public float getTemperature(){
+    return temperature;
+  }
+  
+  public float getHumidity(){
+    return humidity;
+  }
+  
+  public float getPressure(){
+    return pressure;
+  }
+}
+
+public class CurrentConditionsDisplay implements Observer,DisplayElement{
+  Observable observable;
+  private float temperature;
+  private float humidity;
+  
+  public CurrentConditionsDisplay(Observable observable){
+    this.observable = observable;
+    observable.addObserver(this);
+  }
+  
+  public void update(Observable obs,Object arg){
+    if(obs instanceof WeatherData){
+      WeatherData weatherData = (WeatherData)obs;
+      this.temperature = weatherData.getTemperature();
+      this.humidity = weatherData.getHumidity();
+      display();
+    }
+  }
+  
+  public void display(){
+    System.out.println("Current conditions:"+temperature+"F degrees and "+humidity+"% humidity");
+  }
+}
