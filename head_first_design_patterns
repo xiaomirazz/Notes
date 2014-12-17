@@ -7,5 +7,91 @@
 设计原则3
 多用组合，少用继承
 
+----------------------------------------------------------------------------------------------------
 策略模式：
 定义了算法族，分别封装起来，让它们之间可以互相替换，此模式让算法的变化独立于使用算法的客户。
+示例：
+public abstract class Duck{
+  FlyBehavior flyBehavior;
+  QuackBehavior quackBehavior;
+  
+  public void setFlyBehavior(FlyBehavior fb){
+    flyBehavior = fb;
+  }
+  
+  public void setQuackBehavior(QuackBehavior qb){
+    quackBehavior = qb;
+  }
+  
+  public Duck(){
+  }
+  
+  public abstract void display();
+  
+  public void performFly(){
+    flyBehavior.fly();
+  }
+  
+  public void performQuack(){
+    quackBehavior.quack();
+  }
+  
+  public void swim(){
+    System.out.println("All Ducks can swim!!!");
+  }
+}
+
+public interface FlyBehavior{
+  public void fly();
+}
+
+public class FlyWithWings implements FlyBehavior{
+  public void fly(){
+    System.out.println("I'm flying!!!");
+  }
+}
+
+public class FlyNoWay implements FlyBehavior{
+  public void fly(){
+    System.out.println("I can't fly...");
+  }
+}
+
+public interface QuackBehavior{
+  public void quack();
+}
+
+public class Quack implements QuackBehavior{
+  public void quack(){
+    System.out.println("Quack");
+  }
+}
+
+public class MuteQuack implements QuackBehavior{
+  public void quack(){
+    System.out.println("zzzzzzz");
+  }
+}
+
+public class ModelDuck extends Duck{
+  public ModelDuck(){
+    flyBehavior = new FlyNoWay();
+    quackBehavior = new Quack();
+  }
+  
+  public void display(){
+    System.out.println("I'm a model duck!!!");
+  }
+}
+
+public class DuckSimulator{
+public static void main(string[] args){
+    Duck model = new ModelDuck();
+    model.performFly();
+    model.setFlyBehavior(new FlyRocketPowered());
+    model.performFly();
+  }
+}
+-------------------------------------------------------------------------------------------------------
+观察者模式：定义了对象之间的一对多依赖，这样一来，当一个对象改变状态时，它的所有依赖者都会收到通知并自动更新。
+
