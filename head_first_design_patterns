@@ -155,3 +155,13 @@ public class CurrentConditionsDisplay implements Observer,DisplayElement{
     System.out.println("Current conditions:"+temperature+"F degrees and "+humidity+"% humidity");
   }
 }
+
+Observable有局限性，首先它是个类，如果我们的新类需要从另一个父类继承特性，这样就不能实现了。其次，observable还有
+被保护的方法如setChanged。我们无法改变其实现。
+
+如果可以最好实现自己的观察者模式
+-------------------------------------------------------------------------------------------------------------------
+设计原则：类性该对扩展开放，对修改关闭。
+
+装饰者模式
+
