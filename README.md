@@ -1,5 +1,1 @@
-Notes
-=====
-
-Notes for review
-aa
+Notes about some books i've read.
