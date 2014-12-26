@@ -164,4 +164,64 @@ Observable有局限性，首先它是个类，如果我们的新类需要从另�
 设计原则：类性该对扩展开放，对修改关闭。
 
 装饰者模式
+装饰者和被装饰者有相同的超类型。
+你可以用一个或者多个装饰者包装一个对象。
+既然装饰者和被装饰者对象具有相同的超类型，所以在任何需要原始对象的场合，可以用装饰过的对象代替它。
+装饰者可以在所委托被装饰者的行为之前或之后加上自己的行为，以达到特定的目的。
+对象可以再任何时候被装饰，所以可以再运行时动态地、不限量地用你喜欢的装饰者来装饰对象。
 
+定义：动态地将责任附加到对象上，若要扩展功能，装饰者提供了比继承更有弹性的替代方案。
+
+public abstract class Beverage{
+  String description = "Unknown Beverage";
+  public String getDescription(){
+    return description;
+  }
+  public abstract double cost();
+}
+
+public abstract class CondimentDecorator extends Beverage{
+  public abstract String getDescription();
+}
+
+public class Espresso extends Beverage{
+  public Espresso(){
+    description = "Espresso";
+  }
+  
+  public double cost(){
+    return 1.99;
+  }
+}
+
+public class Mocha extends CondimentDecorator{
+  Beverage beverage;
+  
+  public Mocha(Beverage beverage){
+    this. beverage = beverage;
+  }
+  
+  public String getDescription(){
+    return beverage.getDescription()+"Mocha";
+  }
+  
+  public double cost(){
+    return .20+beverage.cost();
+  }
+}
+
+public class StarBuzzCoffee{
+  public static void main(String args[]){
+    Beverage beverage2 = new DarkRoast();
+    beverage2 = new Mocha(beverage2);
+    beverage2 = new Mocha(beverage2);
+    beverage2 = new Whip(beverage2);
+    System.out.println(beverage2.getDescription()+"$"+beverage2.cost());
+  }
+}
+
+Java io库用了大量的装饰者模式
+
+
+------------------------------------------------------------------------------------------------------------------
+工厂模式
