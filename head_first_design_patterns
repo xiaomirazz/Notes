@@ -304,4 +304,44 @@ public class NYPizzaIngredientFactory implements PizzaIngredientFactory{
 抽象工厂模式：提供一个借口，用于创建相关或者依赖对象的家族，而不需要明确指定具体类。
 
 -----------------------------------------------------------------------------------------------------------------
-单件模式：
+单件模式：确保一个类只有一个实例，并提供一个全局访问点。
+
+经典实现：
+public class Singleton{
+  private static Singleton uniqueInstance;
+  private Singleton(){}
+  public static Singleton getInstance(){
+    if(uniqueInstance == null)
+    {
+      uniqueInstance = new Singleton();
+    }
+    return uniqueInstance;
+  }
+}
+
+处理多线程
+public class Singleton{
+  private static Singleton uniqueInstance;
+  private Singleton(){}
+  
+  public static synchronized Singleton getInstance(){  //synchronized迫使每个线程在进入这个方法之前要先等别的线程离开该方法，
+                                                       //也就是说，不会有两个线程可以同时进入这个方法。
+    if(uniqueInstance == null){
+      uniqueInstance = new Singleton();
+    }
+    return uniqueInstance;
+  }
+}
+
+public class Singleton{
+  privatte static Singleton uniqueInstance = new Singleton();
+  
+  private Singleton(){}
+  
+  public static Singleton getInstance(){
+    return uniqueInstance;
+  }
+}
+
+--------------------------------------------------------------------------------------------------------------
+命令模式：
