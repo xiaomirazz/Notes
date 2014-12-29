@@ -224,8 +224,9 @@ Java io库用了大量的装饰者模式
 
 
 ------------------------------------------------------------------------------------------------------------------
-工厂模式
+工厂模式:定义了一个创建对象的接口，但由子类决定要实例化的类是哪一个。工厂方法让类把实例化推迟到子类。
 
+简单工程
 public class SimplePizzaFactory{
   public Pizza createPizza(String type){
     Pizza pizza = null;
@@ -254,3 +255,53 @@ public class PizzaStore{
     return pizza;
   }
 }
+
+改进
+public abstract class PizzaStore{
+  public Pizza orderPizza(String type){
+    Pizza pizza;
+    pizza = createPizza(type);
+    
+    pizza.prepare();
+    pizza.bake();
+    pizza.cut();
+    pizza.box();
+    
+    return pizza;
+  }
+  abstract Pizza createPizza(String type);
+}
+
+public class NYPizaaStore extends PizzaStore{
+  Pizza createPizza(String type){
+    .....
+  }
+}
+
+设计原则：要依赖抽象，不要依赖具体类。
+变量不可以持有具体类的引用。
+不要让类派生自具体类。
+不要覆盖基类中已经实现的方法。
+
+原料工厂
+
+public interface PizzaIngredientFactory{
+  public Dough createDough();
+  public Souce createSauce();
+  public Cheese createCheese();
+  public Veggies[] createVeggies();
+  public Pepperoni createPepperoni();
+  public Clams createClam();
+}
+
+public class NYPizzaIngredientFactory implements PizzaIngredientFactory{
+  public Dough createDough(){
+    return new ThinCrustDough();
+  }
+  .....
+}
+
+抽象工厂模式：提供一个借口，用于创建相关或者依赖对象的家族，而不需要明确指定具体类。
+
+-----------------------------------------------------------------------------------------------------------------
+单件模式：
