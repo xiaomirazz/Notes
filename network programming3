@@ -18,5 +18,107 @@ IO模型
 
 socket的基础API中，可能被阻塞的系统调用包括accept、send、recv、和connect。
 
-IO复用函数（select、poll、epoll_wait）他们本身是阻塞的，它们能够提高程序效率的原因在于它们具有同时监听多个IO时间的能力。
+IO复用函数（select、poll、epoll_wait）他们本身是阻塞的，它们能够提高程序效率的原因在于它们具有同时监听多个IO事件的能力。
 
+我们只有在事件已经发生的情况下去操作非阻塞IO才能提高程序的效率。
+-------------------------------------------------------------------------------------------------------------------------------
+Reactor模式
+
+它要求主线程只负责监听文件描述符上是否有事件发生，有的话立即将该事件通知工作线程。除此外，主线程不做任何其他实质性的工作。
+读写数据，接收新连接，以及处理客户请求均在工作线程中完成。
+
+使用同步IO模型（epool_wait）实现reactor模式的工作流程是：
+1、主线程往epoll内核事件中注册socket上的读就绪事件。
+2、主线程调用epoll_wait等待socket上有数据可读。
+3、当socket上有数据可读的时候，epoll_wait通知主线程。主线程将socket可读事件放入请求队列。
+4、睡眠在请求队列上的某个工作线程被唤醒，它从socket读入数据，并处理客户请求，然后往epoll内核时间表中注册该socket上的写就绪事件。
+5、主线程调用epoll_wait等待socket可写。
+6、当socket可写的时候，epoll_wait通知主线程。主线程将socket可写事件放入请求队列。
+7、睡眠在请求队列上的某个线程被唤醒，它往socket上写入服务器处理客户请求的结果。
+
+------------------------------------------------------------------------------------------------------------------------------
+Proactor模式
+
+将所有IO操作都交给主线程和内核来处理，工作线程仅仅负责业务逻辑。
+
+使用异步IO模型（aio_read和aio_read为例）实现的工作流程。
+
+1、主线程调用aio_read函数向内核注册socket上的读完成事件，并告诉内核用户读缓冲区的位置。以及操作完成如何通知应用 程序。
+2、主线程继续处理其他逻辑。
+3、当socket上的数据被读入用户缓冲区后，内核将向应用程序发送一个信号，以通知应用程序数据已经可用。
+4、应用程序预先定义好的信号处理函数选择一个工作线程来处理客户请求。工作线程处理完客户请求之后，调用aio_write函数向内核注册
+  socket上的写完成事件并告诉内核用户写缓冲区的位置，以及写操作完成时如何通知应用程序。
+5、主线程继续处理其他逻辑。
+6、当用户缓冲区的数据被写入socket之后，内核将向应用程序发送一个信号，以通知应用程序数据已经发送完毕。
+7、应用程序预先定义好的信号处理函数选择一个工作线程来做善后处理，比如决定是否关闭socket。
+
+------------------------------------------------------------------------------------------------------------------------------
+模拟Proactor模式
+
+工作流程：
+1、主线程往epoll内核事件表中注册socket上的读就绪事件。
+2、主线程调用epoll_wait等待socket上有数据可读。
+3、当socket有数据可读的时候，epoll_wait通知主线程。主线程从socket循环读取数据，指导没有更多数据可读，然后将读取到的数据封装
+成一个请求对象插入请求队列。
+4、睡眠在请求队列上的某个工作线程被唤醒，它获得请求对象并处理客户请求，然后往epoll内核事件表中注册socket上的写就绪事件。
+5、主线程调用epoll_wait等待socket可写。
+6、当socket可写时，epoll_wait通知主线程。主线程往socket上写入服务器处理客户请求的结果。
+
+------------------------------------------------------------------------------------------------------------------------------
+简单的有限状态机
+state_machine()
+{
+  state cur_state = typeA;
+  while(cur_state != typeC)
+  {
+    package pack = getNewPackage();
+    switch(cur_state)
+    {
+      case typeA:
+        process_package_state_A(pack);
+        cur_state = typeB;
+        break;
+      case typeB:
+        process_package_state_B(pack);
+        cur_state = typeC;
+        break;
+    }
+  }
+}
+
+----------------------------------------------------------------------------------------------------------------------------
+HTTP请求的读取和分析
+
+#define BUFFER_SIZE 4096
+
+enum CHECK_STATE{CHECK_STATE_REQUESTLINE=0,CHECK_STATE_HEADER};
+
+enum LINE_STATUS{LINE_OK = 0, LINE_BAD,LINE_OPEN};
+
+enum HTTP_CODE{NO_REQUEST,GET_REQUEST,BAD_REQUEST,BAD_REQUEST,FORBIDDEN_REQUEST,INTERNAL_ERROR,CLOSED_CONNECTION};
+
+static const char* szret[] = {"I get a correct result\n","Something wrong\n"};
+
+LINE_STATUS parse_line(char* buffer,int& checked_index,int& read_index)
+{
+  char temp;
+  for(;checked_index < read_index; ++checked_index)
+  {
+    temp = buffer[checked_index];
+    if(temp == '\r')
+    {
+      if((checked_index +1) == read_index)
+      {
+        return LINE_OPEN;
+      }
+      else if(buffer[checked_index + 1] =='\n')
+      {
+        buffer[checked_index++] = '\0';
+        buffer[checked_index++] = '\0';
+        return LINE_OK;
+      }
+      return LINE_BAD;
+    }
+    else if(temp == '\n')
+  }
+}
