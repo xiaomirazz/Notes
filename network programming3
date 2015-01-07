@@ -340,3 +340,150 @@ int main(int argc,char* argv[])
 第九章 io复用
 -------------------------------------------------------------------------------------------------------------------
 select
+int select(int nfds,fd_set* readfds,fd_set* writefds,fd_set* exceptfds,struct timeval* timeout)
+
+先说最后一个参数，它指定愿意等待的时间。
+struct timeval
+{
+     long tv_sec;
+     long tv_usec;
+};
+有3种情况:
+timeout == NULL
+永远等待。如果捕捉到一个信号则中断此无限期等待。当所指定的描述符中的一个已准备好或捕捉到一个信号则返回。如果捕捉到一个信号，则select返回-1，errno设置为EINTR.
+ 
+timeout->tv_sec = 0 && timeout->tv_usec = 0
+完全不等待。测试所有指定的描述符并立即返回。这是得到多个描述符的状态而不阻塞select函数的轮询方法。
+ 
+timeout->tv_sec != 0 || timeout->tv_usec != 0
+ 
+等待指定的秒数和微秒数。
+ 
+注意：
+（1）千万不要混淆了timeout == NULL与timeout->tv_sec = 0 && timeout->tv_usec = 0这2种情况，结果截然不同。
+（2）timeout->tv_sec != 0 || timeout->tv_usec != 0这种情况下，超时过后，就变成了
+ timeout->tv_sec = 0 && timeout->tv_usec = 0。
+ 
+中间的三个参数readfds,writefds和exceptfds是指向描述符集的指针。这三个描述符集说明了我们关心的可读、可写或处于异常条件的各个描述符。每个描述符放在一个fd_set数据类型中。这种数据类型为每一可能的描述符保持了一位。
+ 
+对fd_set数据类型可以进行处理的是：分配一个这种类型的变量；将这种类型的一个变量赋予同类型的另一个变量；或对于这种类型的变量使用下列四个函数中的一个。
+ 
+#include <sys/select.h>
+int  FD_ISSET(int fd,fd_set *fdset);
+void FD_CLR(int fd,fd_set *fdset);
+void FD_SET(int fd,fd_set *fdset);
+void FD_ZERO(int fd,fd_set *fdset);
+ 
+这些接口可实现为宏或函数。具体意见就不多说了。
+ 
+int select(int maxfdp1,fd_set *readfds,fd_set *writefds,fd_set *exceptfds,struct timeval *timeout);
+ 
+因为描述符编号从0开始，所以要在最大描述符编号值上加1.第一个参数实际上是要检查的描述符数（从描述符0开始）
+select有三个可能的返回值。
+（1）返回值-1表示出错。出错是有可能的，例如在所指定的描述符都没有准备好时捕捉到一个信号。在此种情况下，将不修改其中任何描述符集。
+（2）返回值0表示没有描述符准备好。若指定的描述符都没有准备好，而且指定的时间已经超过，则发生此种情况。此时，所有描述符集皆被清0.
+（3）正返回值表示已经准备好的描述符数。
+ 
+注意红色部分，超时后，每次描述符集都需要重新设置。
+ 
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/select.h>
+#include <netdb.h>
+int main(int argc,char *argv[])
+{
+ int listen_fd;
+ int client_fd;
+ socklen_t clt_len;
+ struct sockaddr_in srv_addr;
+ struct sockaddr_in clt_addr;
+ int port;
+ int ret;
+ int len;
+ int num;
+ char recv_buf[1024];
+ fd_set read_fds;
+ struct timeval wait_time;
+ if(argc != 2)
+ {
+  printf("Usage: %s port_name\n",argv[0]);
+  return 1;
+ }
+ 
+ port = atoi(argv[1]);
+ listen_fd = socket(PF_INET,SOCK_STREAM,0);
+ if(listen_fd < 0){
+  perror("cannot create socket");
+  return 1;
+ }
+ memset(&srv_addr,0,sizeof(srv_addr));
+ srv_addr.sin_family=AF_INET;
+ srv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+ srv_addr.sin_port=htons(port);
+ ret = bind(listen_fd,(struct sockaddr*)&srv_addr,sizeof(srv_addr));
+ if(ret < 0)
+ {
+  perror("cannot bind the socket");
+  return 1;
+ }
+ ret = listen(listen_fd,1);
+ if(ret == -1)
+ {
+  perror("cannot listen the client connect request");
+  close(listen_fd);
+  return 1;
+ }
+    wait_time.tv_sec=0;
+ wait_time.tv_usec=0;
+ FD_ZERO(&read_fds);
+ FD_SET(listen_fd,&read_fds);
+  
+ while(1)
+ { 
+     FD_ZERO(&read_fds);
+     FD_SET(listen_fd,&read_fds);
+   ret = select(listen_fd + 1,&read_fds,NULL,NULL,&wait_time);   
+        if(ret > 0)
+        {        
+            if(FD_ISSET(listen_fd,&read_fds) > 0)
+            {                 
+                len = sizeof(clt_addr);
+                client_fd = accept(listen_fd,(struct sockaddr*)&clt_addr,&len);
+                if(client_fd < 0)
+                {         
+                    perror("cannot accept client connect request");
+                    close(listen_fd);
+                    return 1;  
+                }
+                while(1)
+                {
+                    FD_ZERO(&read_fds);
+                    FD_SET(client_fd,&read_fds);    
+                    if(select(client_fd + 1,&read_fds,NULL,NULL,&wait_time) > 0)
+                    {                
+                        if(FD_ISSET(client_fd,&read_fds) > 0)
+                        {
+                            len = read(client_fd,recv_buf,sizeof(recv_buf));
+                            if(len > 0)
+                            {
+                                recv_buf[len] = 0;
+                                printf("%s\n",recv_buf);
+                                write(client_fd,recv_buf,len);
+                            }
+                            else
+                            {
+                                close(client_fd);
+                                break;
+                            }
+                        }                   
+                    }                   
+                }           
+               
+           }     
+                              
+        } 
+        
+ }
+}
