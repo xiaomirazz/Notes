@@ -444,3 +444,4 @@ public class TurkeyAdapter implements Duck{
 以上是对象适配器。
 
 下面是类适配器。
+
