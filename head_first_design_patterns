@@ -386,3 +386,61 @@ public class LightOffCommand implements Command{
 }
 ---------------------------------------------------------------------------------------------------------------------
 适配器模式与外观模式
+适配器可以协调现有系统和要使用新的系统的接口，将客户发出的请求转换成厂商能够理解的请求。
+适配器模式：将一个类的接口，转换成客户期望的另一个接口。适配器让原本接口不兼容的类可以合作无间。
+
+鸭子
+public interface Duck{
+  public void quack();
+  public void fly();
+}
+
+public class MallardDuck implements Duck{
+  public void quack(){
+    ...
+  }
+  public void fly(){
+    ...
+  }
+}
+
+火鸡
+public interface Turkey{
+  public void gobble();
+  public void fly();
+}
+
+public class WildTurkey implements Turkey{
+  public void gobble(){
+  }
+  public void fly(){
+  }
+}
+
+用火鸡冒充鸭子
+public class TurkeyAdapter implements Duck{
+  Turkey turkey;
+  
+  public TurkeyAdapter(Turkey turkey){
+    this.turkey = turkey;
+  }
+  
+  public void quack(){
+    turkey.gobble();
+  }
+  
+  public void fly(){
+    turkey.fly();  
+  }
+}
+
+客户使用适配器的过程：
+1.客户通过目标接口调用适配器的方法对适配器发出请求。
+2.适配器使用被是陪着接口把请求转换成被适配者的一个或者多个接口。
+3.客户收到调用的结果，但并未察觉这一切是适配器在起作用。
+
+被适配者的子类也可以搭配适配器使用。
+
+以上是对象适配器。
+
+下面是类适配器。
