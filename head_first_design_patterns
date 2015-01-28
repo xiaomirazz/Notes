@@ -447,3 +447,78 @@ public class TurkeyAdapter implements Duck{
 适用于允许多重继承的语言。
 -----------------------------------------------------------------------------------------------------------------
 外观模式
+提供一个统一的接口，用来访问子系统中的一群接口。外观定义了一个高层接口，让子系统更容易使用。
+
+设计原则
+最少只是原则：只和你的密友谈话。减少对象之间的依赖。
+
+----------------------------------------------------------------------------------------------------------------
+模板方法模式
+定义了一个算法的步骤，并允许子类为一个或者多个步骤提供实现。
+在一个方法中定义一个算法的骨架，而将一些步骤延迟到子类中。模板方法使得子类可以再不改变算法结构的情况下，重新定义算法中的某些步骤。
+茶和咖啡都是有咖啡因的饮料。他们的冲制方式也有类似。利用模板方法模式将他们同一。
+public abstract class CaffeineBeverage{
+  final void prepareRecipe(){
+    boilWater();
+    brew();
+    pourInCup();
+    addCondiments();
+  }
+  
+  abstract void brew();
+  
+  abstract void addCondiments();
+  
+  void boilWater(){}
+  void pourInCup(){}
+}
+
+public class Tea extends CaffeineBeverage{
+  public void brew(){}
+  public void addCondiments(){}
+}
+
+public class Coffee extends CaffeineBeverage{
+  public void brew(){}
+  public void addCondiments(){}
+}
+
+
+对模板方法进行挂钩
+public abstract class CaffeineBeverageWithHook{
+  void prepareRecipe(){
+    boilWater();
+    brew();
+    pourInCup();
+    if(customerWantsCondiments()){
+      addCondiments();
+    }
+    
+    abstract void brew();
+    abstract void addCondiments();
+    
+    void boilWater(){}
+    void pourInCup(){}
+    
+    boolean customerWantsCondiments(){
+      return true;
+    }
+  }
+}
+
+public CoffeeWithHook extends CaffeineBeverageWithHook{
+  public void brew(){}
+  public void addCondiments(){}
+  
+  public boolean customerWantsCondiments(){
+    String ans = getUserInput();
+    
+    if(ans.toLowerCase().startsWith("y")){
+      return true;
+    }else{
+      return false;
+    }
+  }
+}
+
+好莱坞原则：别调用我们，我们会调用你。
