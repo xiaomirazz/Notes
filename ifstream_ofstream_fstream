@@ -1,0 +1,915 @@
+C++文件操作详解（ifstream、ofstream、fstream）
+
+ 
+
+C++ 通过以下几个类支持文件的输入输出：
+
+ofstream: 写操作（输出）的文件类 (由ostream引申而来)
+ifstream: 读操作（输入）的文件类(由istream引申而来)
+fstream: 可同时读写操作的文件类 (由iostream引申而来)
+ 
+
+打开文件(Open a file)
+
+对这些类的一个对象所做的第一个操作通常就是将它和一个真正的文件联系起来，也就是说打开一个文件。被打开的文件在程序中由一个流对象(stream object)来表示 (这些类的一个实例) ，而对这个流对象所做的任何输入输出操作实际就是对该文件所做的操作。
+
+要通过一个流对象打开一个文件，我们使用它的成员函数open()：
+
+void open (const char * filename, openmode mode);
+
+这里filename 是一个字符串，代表要打开的文件名，mode 是以下标志符的一个组合：
+
+ios::in
+
+为输入(读)而打开文件
+
+ios::out
+
+为输出(写)而打开文件
+
+ios::ate
+
+初始位置：文件尾
+
+ios::app
+
+所有输出附加在文件末尾
+
+ios::trunc
+
+如果文件已存在则先删除该文件
+
+ios::binary
+
+二进制方式
+
+这些标识符可以被组合使用，中间以”或”操作符(|)间隔。例如，如果我们想要以二进制方式打开文件"example.bin" 来写入一些数据，我们可以通过以下方式调用成员函数open（）来实现：
+
+ofstream file;
+file.open ("example.bin", ios::out | ios::app | ios::binary);
+
+ofstream, ifstream 和 fstream所有这些类的成员函数open 都包含了一个默认打开文件的方式，这三个类的默认方式各不相同：
+
+类
+
+参数的默认方式
+
+ofstream
+
+ios::out | ios::trunc
+
+ifstream
+
+ios::in
+
+fstream
+
+ios::in | ios::out
+
+只有当函数被调用时没有声明方式参数的情况下，默认值才会被采用。如果函数被调用时声明了任何参数，默认值将被完全改写，而不会与调用参数组合。
+
+由于对类ofstream, ifstream 和 fstream 的对象所进行的第一个操作通常都是打开文件，这些类都有一个构造函数可以直接调用open 函数，并拥有同样的参数。这样，我们就可以通过以下方式进行与上面同样的定义对象和打开文件的操作：
+
+ofstream file ("example.bin", ios::out | ios::app | ios::binary);
+
+两种打开文件的方式都是正确的。
+
+你可以通过调用成员函数is_open()来检查一个文件是否已经被顺利的打开了：
+
+bool is_open();
+
+它返回一个布尔(bool)值，为真（true）代表文件已经被顺利打开，假( false )则相反。
+
+ 
+
+关闭文件(Closing a file)
+
+当文件读写操作完成之后，我们必须将文件关闭以使文件重新变为可访问的。关闭文件需要调用成员函数close()，它负责将缓存中的数据排放出来并关闭文件。它的格式很简单：
+
+void close ();
+
+这个函数一旦被调用，原先的流对象(stream object)就可以被用来打开其它的文件了，这个文件也就可以重新被其它的进程(process)所有访问了。
+
+为防止流对象被销毁时还联系着打开的文件，析构函数(destructor)将会自动调用关闭函数close。
+
+ 
+
+文本文件(Text mode files)
+
+类ofstream, ifstream 和fstream 是分别从ostream, istream 和iostream 中引申而来的。这就是为什么 fstream 的对象可以使用其父类的成员来访问数据。
+
+一般来说，我们将使用这些类与同控制台(console)交互同样的成员函数(cin 和 cout)来进行输入输出。如下面的例题所示，我们使用重载的插入操作符<<：
+
+    // writing on a text file
+      #include <fiostream.h>
+      
+      int main () {
+          ofstream examplefile   ("example.txt");
+          if (examplefile.is_open()) {
+              examplefile <<   "This is a line.\n";
+              examplefile <<   "This is another line.\n";
+              examplefile.close();
+          }
+          return 0;
+      }
+   
+
+file example.txt 
+  This is a line.
+  This is another line.
+
+从文件中读入数据也可以用与 cin的使用同样的方法：
+
+    // reading a text file
+      #include <iostream.h>
+      #include <fstream.h>
+      #include <stdlib.h>
+      
+      int main () {
+          char buffer[256];
+          ifstream examplefile   ("example.txt");
+          if (! examplefile.is_open())
+          { cout << "Error   opening file"; exit (1); }
+          while (! examplefile.eof() ) {
+              examplefile.getline   (buffer,100);
+              cout << buffer   << endl;
+          }
+          return 0;
+      }
+    
+
+This is a line.
+  This is another line.
+
+上面的例子读入一个文本文件的内容，然后将它打印到屏幕上。注意我们使用了一个新的成员函数叫做eof ，它是ifstream 从类 ios 中继承过来的，当到达文件末尾时返回true 。
+
+ 
+
+状态标志符的验证(Verification of state flags)
+
+除了eof()以外，还有一些验证流的状态的成员函数（所有都返回bool型返回值）：
+
+bad()
+如果在读写过程中出错，返回 true 。例如：当我们要对一个不是打开为写状态的文件进行写入时，或者我们要写入的设备没有剩余空间的时候。
+
+fail()
+除了与bad() 同样的情况下会返回 true 以外，加上格式错误时也返回true ，例如当想要读入一个整数，而获得了一个字母的时候。
+
+eof()
+如果读文件到达文件末尾，返回true。
+
+good()
+这是最通用的：如果调用以上任何一个函数返回true 的话，此函数返回 false 。
+
+要想重置以上成员函数所检查的状态标志，你可以使用成员函数clear()，没有参数。
+
+ 
+
+获得和设置流指针(get and put stream pointers)
+
+所有输入/输出流对象(i/o streams objects)都有至少一个流指针：
+
+ifstream， 类似istream, 有一个被称为get pointer的指针，指向下一个将被读取的元素。
+ofstream, 类似 ostream, 有一个指针 put pointer ，指向写入下一个元素的位置。
+fstream, 类似 iostream, 同时继承了get 和 put
+我们可以通过使用以下成员函数来读出或配置这些指向流中读写位置的流指针：
+
+tellg() 和 tellp()
+这两个成员函数不用传入参数，返回pos_type 类型的值(根据ANSI-C++ 标准) ，就是一个整数，代表当前get 流指针的位置 (用tellg) 或 put 流指针的位置(用tellp).
+
+seekg() 和seekp()
+这对函数分别用来改变流指针get 和put的位置。两个函数都被重载为两种不同的原型：
+
+seekg ( pos_type position );
+seekp ( pos_type position );
+
+使用这个原型，流指针被改变为指向从文件开始计算的一个绝对位置。要求传入的参数类型与函数 tellg 和tellp 的返回值类型相同。
+
+seekg ( off_type offset, seekdir direction );
+seekp ( off_type offset, seekdir direction );
+
+使用这个原型可以指定由参数direction决定的一个具体的指针开始计算的一个位移(offset)。它可以是：
+
+ios::beg
+
+从流开始位置计算的位移
+
+ios::cur
+
+从流指针当前位置开始计算的位移
+
+ios::end
+
+从流末尾处开始计算的位移
+
+流指针 get 和 put 的值对文本文件(text file)和二进制文件(binary file)的计算方法都是不同的，因为文本模式的文件中某些特殊字符可能被修改。由于这个原因，建议对以文本文件模式打开的文件总是使用seekg 和 seekp的第一种原型，而且不要对tellg 或 tellp 的返回值进行修改。对二进制文件，你可以任意使用这些函数，应该不会有任何意外的行为产生。
+
+以下例子使用这些函数来获得一个二进制文件的大小：
+
+    // obtaining file size
+      #include <iostream.h>
+      #include <fstream.h>
+      
+      const char * filename =   "example.txt";
+      
+      int main () {
+          long l,m;
+          ifstream file (filename,   ios::in|ios::binary);
+          l = file.tellg();
+          file.seekg (0, ios::end);
+          m = file.tellg();
+          file.close();
+          cout << "size of   " << filename;
+          cout << " is "   << (m-l) << " bytes.\n";
+          return 0;
+      }
+    
+
+size of example.txt is 40   bytes.
+
+ 
+
+二进制文件(Binary files)
+
+在二进制文件中，使用<< 和>>，以及函数（如getline）来操作符输入和输出数据，没有什么实际意义，虽然它们是符合语法的。
+
+文件流包括两个为顺序读写数据特殊设计的成员函数：write 和 read。第一个函数 (write) 是ostream 的一个成员函数，都是被ofstream所继承。而read 是istream 的一个成员函数，被ifstream 所继承。类 fstream 的对象同时拥有这两个函数。它们的原型是：
+
+write ( char * buffer, streamsize size );
+read ( char * buffer, streamsize size );
+
+这里 buffer 是一块内存的地址，用来存储或读出数据。参数size 是一个整数值，表示要从缓存（buffer）中读出或写入的字符数。
+
+    // reading binary file
+      #include <iostream>
+      #include <fstream.h>
+      
+      const char * filename =   "example.txt";
+      
+      int main () {
+          char * buffer;
+          long size;
+          ifstream file (filename,   ios::in|ios::binary|ios::ate);
+          size = file.tellg();
+          file.seekg (0, ios::beg);
+          buffer = new char [size];
+          file.read (buffer, size);
+          file.close();
+          
+          cout << "the   complete file is in a buffer";
+          
+          delete[] buffer;
+          return 0;
+      }
+    
+
+The complete file is in a   buffer
+
+ 
+
+缓存和同步(Buffers and Synchronization)
+
+当我们对文件流进行操作的时候，它们与一个streambuf 类型的缓存(buffer)联系在一起。这个缓存（buffer）实际是一块内存空间，作为流(stream)和物理文件的媒介。例如，对于一个输出流， 每次成员函数put (写一个单个字符)被调用，这个字符不是直接被写入该输出流所对应的物理文件中的，而是首先被插入到该流的缓存（buffer）中。
+
+当缓存被排放出来(flush)时，它里面的所有数据或者被写入物理媒质中（如果是一个输出流的话），或者简单的被抹掉(如果是一个输入流的话)。这个过程称为同步(synchronization)，它会在以下任一情况下发生：
+
+当文件被关闭时: 在文件被关闭之前，所有还没有被完全写出或读取的缓存都将被同步。
+当缓存buffer 满时:缓存Buffers 有一定的空间限制。当缓存满时，它会被自动同步。
+控制符明确指明:当遇到流中某些特定的控制符时，同步会发生。这些控制符包括：flush 和endl。
+明确调用函数sync(): 调用成员函数sync() (无参数)可以引发立即同步。这个函数返回一个int 值，等于-1 表示流没有联系的缓存或操作失败。
+在C++中，有一个stream这个类，所有的I/O都以这个“流”类为基础的，包括我们要认识的文件I/O，stream这个类有两个重要的运算符：
+1、插入器(<<) 
+向流输出数据。比如说系统有一个默认的标准输出流(cout)，一般情况下就是指的显示器，所以，cout<<"Write Stdout"<<'n';就表示把字符串"Write Stdout"和换行字符('n')输出到标准输出流。
+
+2、析取器(>>) 
+从流中输入数据。比如说系统有一个默认的标准输入流(cin)，一般情况下就是指的键盘，所以，cin>>x;就表示从标准输入流中读取一个指定类型(即变量x的类型)的数据。
+
+在C++中，对文件的操作是通过stream的子类fstream(file stream)来实现的，所以，要用这种方式操作文件，就必须加入头文件fstream.h。下面就把此类的文件操作过程一一道来。
+
+一、打开文件 
+在fstream类中，有一个成员函数open()，就是用来打开文件的，其原型是：
+
+void open(const char* filename,int mode,int access);
+
+参数：
+
+filename： 要打开的文件名 
+mode： 要打开文件的方式 
+access： 打开文件的属性 
+打开文件的方式在类ios(是所有流式I/O类的基类)中定义，常用的值如下：
+
+ios::app： 以追加的方式打开文件 
+ios::ate： 文件打开后定位到文件尾，ios:app就包含有此属性 
+ios::binary： 以二进制方式打开文件，缺省的方式是文本方式。两种方式的区别见前文 
+ios::in： 文件以输入方式打开 
+ios::out： 文件以输出方式打开 
+ios::nocreate： 不建立文件，所以文件不存在时打开失败 
+ios::noreplace：不覆盖文件，所以打开文件时如果文件存在失败 
+ios::trunc： 如果文件存在，把文件长度设为0 
+可以用“或”把以上属性连接起来，如ios::out|ios::binary
+
+打开文件的属性取值是：
+
+0：普通文件，打开访问 
+1：只读文件 
+2：隐含文件 
+4：系统文件 
+可以用“或”或者“+”把以上属性连接起来 ，如3或1|2就是以只读和隐含属性打开文件。
+
+例如：以二进制输入方式打开文件c:config.sys
+
+fstream file1; 
+file1.open("c:config.sys",ios::binary|ios::in,0);
+
+如果open函数只有文件名一个参数，则是以读/写普通文件打开，即：
+
+file1.open("c:config.sys");<=>file1.open("c:config.sys",ios::in|ios::out,0);
+
+另外，fstream还有和open()一样的构造函数，对于上例，在定义的时侯就可以打开文件了：
+
+fstream file1("c:config.sys");
+
+特别提出的是，fstream有两个子类：ifstream(input file stream)和ofstream(outpu file stream)，ifstream默认以输入方式打开文件，而ofstream默认以输出方式打开文件。
+
+ifstream file2("c:pdos.def");//以输入方式打开文件 
+ofstream file3("c:x.123");//以输出方式打开文件
+
+所以，在实际应用中，根据需要的不同，选择不同的类来定义：如果想以输入方式打开，就用ifstream来定义；如果想以输出方式打开，就用ofstream来定义；如果想以输入/输出方式来打开，就用fstream来定义。
+
+二、关闭文件 
+打开的文件使用完成后一定要关闭，fstream提供了成员函数close()来完成此操作，如：file1.close();就把file1相连的文件关闭。
+
+三、读写文件 
+读写文件分为文本文件和二进制文件的读取，对于文本文件的读取比较简单，用插入器和析取器就可以了；而对于二进制的读取就要复杂些，下要就详细的介绍这两种方式
+
+1、文本文件的读写 
+文本文件的读写很简单：用插入器(<<)向文件输出；用析取器(>>)从文件输入。假设file1是以输入方式打开，file2以输出打开。示例如下：
+
+file2<<"I Love You";//向文件写入字符串"I Love You" 
+int i; 
+file1>>i;//从文件输入一个整数值。
+
+这种方式还有一种简单的格式化能力，比如可以指定输出为16进制等等，具体的格式有以下一些
+
+操纵符 功能 输入/输出 
+dec 格式化为十进制数值数据 输入和输出 
+endl 输出一个换行符并刷新此流 输出 
+ends 输出一个空字符 输出 
+hex 格式化为十六进制数值数据 输入和输出 
+oct 格式化为八进制数值数据 输入和输出 
+setpxecision(int p) 设置浮点数的精度位数 输出
+
+比如要把123当作十六进制输出：file1<<hex<<123;要把3.1415926以5位精度输出：file1<<setpxecision(5)<<3.1415926。
+
+2、二进制文件的读写 
+①put() 
+put()函数向流写入一个字符，其原型是ofstream &put(char ch)，使用也比较简单，如file1.put('c');就是向流写一个字符'c'。
+
+②get() 
+get()函数比较灵活，有3种常用的重载形式：
+
+一种就是和put()对应的形式：ifstream &get(char &ch);功能是从流中读取一个字符，结果保存在引用ch中，如果到文件尾，返回空字符。如file2.get(x);表示从文件中读取一个字符，并把读取的字符保存在x中。
+
+另一种重载形式的原型是： int get();这种形式是从流中返回一个字符，如果到达文件尾，返回EOF，如x=file2.get();和上例功能是一样的。
+
+还 有一种形式的原型是：ifstream &get(char *buf,int num,char delim='n')；这种形式把字符读入由 buf 指向的数组，直到读入了 num 个字符或遇到了由 delim 指定的字符，如果没使用 delim 这个参数，将使用缺省值换行符'n'。例如：
+
+file2.get(str1,127,'A');//从文件中读取字符到字符串str1，当遇到字符'A'或读取了127个字符时终止。
+
+③读写数据块 
+要读写二进制数据块，使用成员函数read()和write()成员函数，它们原型如下：
+
+read(unsigned char *buf,int num); 
+write(const unsigned char *buf,int num);
+
+read() 从文件中读取 num 个字符到 buf 指向的缓存中，如果在还未读入 num 个字符时就到了文件尾，可以用成员函数 int gcount();来取得实际读取的字符数；而 write() 从buf 指向的缓存写 num 个字符到文件中，值得注意的是缓存的类型是 unsigned char *，有时可能需要类型转换。
+
+例：
+
+unsigned char str1[]="I Love You"; 
+int n[5]; 
+ifstream in("xxx.xxx"); 
+ofstream out("yyy.yyy"); 
+out.write(str1,strlen(str1));//把字符串str1全部写到yyy.yyy中 
+in.read((unsigned char*)n,sizeof(n));//从xxx.xxx中读取指定个整数，注意类型转换 
+in.close();out.close();
+
+四、检测EOF 
+成员函数eof()用来检测是否到达文件尾，如果到达文件尾返回非0值，否则返回0。原型是int eof();
+
+例： if(in.eof())ShowMessage("已经到达文件尾！");
+
+五、文件定位 
+和C的文件操作方式不同的是，C++ I/O系统管理两个与一个文件相联系的指针。一个是读指针，它说明输入操作在文件中的位置；另一个是写指针，它下次写操作的位置。每次执行输入或输出时， 相应的指针自动变化。所以，C++的文件定位分为读位置和写位置的定位，对应的成员函数是 seekg()和 seekp()，seekg()是设置读位置，seekp是设置写位置。它们最通用的形式如下：
+
+istream &seekg(streamoff offset,seek_dir origin); 
+ostream &seekp(streamoff offset,seek_dir origin);
+
+streamoff定义于 iostream.h 中，定义有偏移量 offset 所能取得的最大值，seek_dir 表示移动的基准位置，是一个有以下值的枚举：
+
+ios::beg： 文件开头 
+ios::cur： 文件当前位置 
+ios::end： 文件结尾 
+这两个函数一般用于二进制文件，因为文本文件会因为系统对字符的解释而可能与预想的值不同。
+
+例：
+
+file1.seekg(1234,ios::cur);//把文件的读指针从当前位置向后移1234个字节 
+file2.seekp(1234,ios::beg);//把文件的写指针从文件开头向后移1234个字节
+
+ 
+
+ 
+
+ 
+
+ofstream是从内存到硬盘，ifstream是从硬盘到内存，其实所谓的流缓冲就是内存空间;
+
+ 
+
+　　在C++中，有一个stream这个类，所有的I/O都以这个“流”类为基础的，包括我们要认识的文件I/O，stream这个类有两个重要的运算符：
+
+ 
+
+　　1、插入器(<<)
+
+ 
+
+　　向流输出数据。比如说系统有一个默认的标准输出流(cout)，一般情况下就是指的显示器，所以，cout<<"Write Stdout"<<'\n';就表示把字符串"Write Stdout"和换行字符('\n')输出到标准输出流。
+
+ 
+
+　　2、析取器(>>)
+
+ 
+
+　　从流中输入数据。比如说系统有一个默认的标准输入流(cin)，一般情况下就是指的键盘，所以，cin>>x;就表示从标准输入流中读取一个指定类型(即变量x的类型)的数据。
+
+ 
+
+　　在C++中，对文件的操作是通过stream的子类fstream(file stream)来实现的，所以，要用这种方式操作文件，就必须加入头文件fstream.h。下面就把此类的文件操作过程一一道来。
+
+ 
+
+　　一、打开文件
+
+ 
+
+　　在fstream类中，有一个成员函数open()，就是用来打开文件的，其原型是：
+
+ 
+
+　　void open(const char* filename,int mode,int access);参数：
+
+ 
+
+　　filename：　　要打开的文件名
+
+ 
+
+　　mode：　　　　要打开文件的方式
+
+ 
+
+　　access：　　　打开文件的属性
+
+ 
+
+　　打开文件的方式在类ios(是所有流式I/O类的基类)中定义，常用的值如下：
+
+ 
+
+　　ios::app：　　　以追加的方式打开文件
+
+ 
+
+　　ios::ate：　　　文件打开后定位到文件尾，ios:app就包含有此属性
+
+ 
+
+　　ios::binary：　以二进制方式打开文件，缺省的方式是文本方式。两种方式的区别见前文
+
+ 
+
+　　ios::in：　　　 文件以输入方式打开(文件数据输入到内存)
+
+ 
+
+　　ios::out：　　　文件以输出方式打开(内存数据输出到文件)
+
+ 
+
+　　ios::nocreate： 不建立文件，所以文件不存在时打开失败
+
+ 
+
+　　ios::noreplace：不覆盖文件，所以打开文件时如果文件存在失败
+
+ 
+
+　　ios::trunc：　　如果文件存在，把文件长度设为0
+
+ 
+
+　　可以用“或”把以上属性连接起来，如ios::out|ios::binary
+
+ 
+
+　　打开文件的属性取值是：
+
+ 
+
+　　0：普通文件，打开访问
+
+ 
+
+　　1：只读文件
+
+ 
+
+　　2：隐含文件
+
+ 
+
+　　4：系统文件
+
+ 
+
+　　可以用“或”或者“+”把以上属性连接起来，如3或1|2就是以只读和隐含属性打开文件。
+
+ 
+
+　　例如：以二进制输入方式打开文件c:\config.sys
+
+ 
+
+　　fstream file1;
+
+ 
+
+　　file1.open("c:\\config.sys",ios::binary|ios::in,0);
+
+ 
+
+　　如果open函数只有文件名一个参数，则是以读/写普通文件打开，即：
+
+ 
+
+　　file1.open("c:\\config.sys"); <=> file1.open("c:\\config.sys",ios::in|ios::out,0);
+
+ 
+
+　　另外，fstream还有和open()一样的构造函数，对于上例，在定义的时侯就可以打开文件了：
+
+ 
+
+　　fstream file1("c:\\config.sys");　　特别提出的是，fstream有两个子类：ifstream(input file stream)和ofstream(outpu file stream)，ifstream默认以输入方式打开文件，而ofstream默认以输出方式打开文件。
+
+ 
+
+　　ifstream file2("c:\\pdos.def");//以输入方式打开文件
+
+ 
+
+　　ofstream file3("c:\\x.123");//以输出方式打开文件　　所以，在实际应用中，根据需要的不同，选择不同的类来定义：如果想以输入方式打开，就用ifstream来定义;如果想以输出方式打开，就用ofstream来定义;如果想以输入/输出方式来打开，就用fstream来定义。
+
+ 
+
+　　二、关闭文件
+
+ 
+
+　　打开的文件使用完成后一定要关闭，fstream提供了成员函数close()来完成此操作，如：file1.close();就把file1相连的文件关闭。
+
+ 
+
+　　三、读写文件
+
+ 
+
+　　读写文件分为文本文件和二进制文件的读取，对于文本文件的读取比较简单，用插入器和析取器就可以了;而对于二进制的读取就要复杂些，下要就详细的介绍这两种方式
+
+ 
+
+　　1、文本文件的读写
+
+ 
+
+　　文本文件的读写很简单：用插入器(<<)向文件输出;用析取器(>>)从文件输入。假设file1是以输入方式打开，file2以输出打开。示例如下：
+
+ 
+
+　　file2<<"I Love You";//向文件写入字符串"I Love You"
+
+ 
+
+　　int i;
+
+ 
+
+　　file1>>i;//从文件输入一个整数值。
+
+ 
+
+　　这种方式还有一种简单的格式化能力，比如可以指定输出为16进制等等，具体的格式有以下一些
+
+ 
+
+　　操纵符 功能 输入/输出
+
+ 
+
+　　dec 格式化为十进制数值数据 输入和输出
+
+ 
+
+　　endl 输出一个换行符并刷新此流 输出
+
+ 
+
+　　ends 输出一个空字符 输出
+
+ 
+
+　　hex 格式化为十六进制数值数据 输入和输出
+
+ 
+
+　　oct 格式化为八进制数值数据 输入和输出
+
+ 
+
+　　setpxecision(int p) 设置浮点数的精度位数 输出
+
+ 
+
+　　比如要把123当作十六进制输出：file1<
+
+ 
+
+　　2、二进制文件的读写
+
+ 
+
+　　①put()
+
+ 
+
+　　put()函数向流写入一个字符，其原型是ofstream &put(char ch)，使用也比较简单，如file1.put('c');就是向流写一个字符'c'。
+
+ 
+
+　　②get()
+
+ 
+
+　　get()函数比较灵活，有3种常用的重载形式：
+
+ 
+
+　　一种就是和put()对应的形式：ifstream &get(char &ch);功能是从流中读取一个字符，结果保存在引用ch中，如果到文件尾，返回空字符。如file2.get(x);表示从文件中读取一个字符，并把读取的字符保存在x中。
+
+ 
+
+　　另一种重载形式的原型是： int get();这种形式是从流中返回一个字符，如果到达文件尾，返回EOF，如x=file2.get();和上例功能是一样的。
+
+ 
+
+　　还有一种形式的原型是：ifstream &get(char *buf,int num,char delim='\n');这种形式把字符读入由 buf 指向的数组，直到读入了 num 个字符或遇到了由 delim 指定的字符，如果没使用 delim 这个参数，将使用缺省值换行符'\n'。例如：
+
+ 
+
+　　file2.get(str1,127,'A'); //从文件中读取字符到字符串str1，当遇到字符'A'或读取了127个字符时终止。
+
+ 
+
+　　③读写数据块
+
+ 
+
+　　要读写二进制数据块，使用成员函数read()和write()成员函数，它们原型如下：
+
+ 
+
+　　read(unsigned char *buf,int num);
+
+ 
+
+　　write(const unsigned char *buf,int num);
+
+ 
+
+　　read()从文件中读取 num 个字符到 buf 指向的缓存中，如果在还未读入 num 个字符时就到了文件尾，可以用成员函数 int gcount();来取得实际读取的字符数;而 write() 从buf 指向的缓存写 num 个字符到文件中，值得注意的是缓存的类型是 unsigned char *，有时可能需要类型转换。
+
+ 
+
+　　例：
+
+ 
+
+　　unsigned char str1[]="I Love You";
+
+ 
+
+　　int n[5];
+
+ 
+
+　　ifstream in("xxx.xxx");
+
+ 
+
+　　ofstream out("yyy.yyy");
+
+ 
+
+　　out.write(str1,strlen(str1));//把字符串str1全部写到yyy.yyy中
+
+ 
+
+　　in.read((unsigned char*)n,sizeof(n));//从xxx.xxx中读取指定个整数，注意类型转换
+
+ 
+
+　　in.close();out.close(); 四、检测EOF
+
+ 
+
+　　成员函数eof()用来检测是否到达文件尾，如果到达文件尾返回非0值，否则返回0。原型是int eof();
+
+ 
+
+　　例：　　if(in.eof()) ShowMessage("已经到达文件尾!");
+
+ 
+
+　　五、文件定位
+
+ 
+
+　　和C的文件操作方式不同的是，C++ I/O系统管理两个与一个文件相联系的指针。一个是读指针，它说明输入操作在文件中的位置;另一个是写指针，它下次写操作的位置。每次执行输入或输出时，相应的指针自动变化。所以，C++的文件定位分为读位置和写位置的定位，对应的成员函数是seekg()和seekp()。seekg()是设置读位置， seekp是设置写位置。它们最通用的形式如下：
+
+ 
+
+　　istream &seekg(streamoff offset,seek_dir origin);
+
+ 
+
+　　ostream &seekp(streamoff offset,seek_dir origin);
+
+ 
+
+　　streamoff定义于 iostream.h 中，定义有偏移量 offset 所能取得的最大值，seek_dir 表示移动的基准位置，是一个有以下值的枚举：
+
+ 
+
+　　ios::beg：　　文件开头
+
+ 
+
+　　ios::cur：　　文件当前位置
+
+ 
+
+　　ios::end：　　文件结尾
+
+ 
+
+　　这两个函数一般用于二进制文件，因为文本文件会因为系统对字符的解释而可能与预想的值不同。例：
+
+ 
+
+　　file1.seekg(1234,ios::cur); //把文件的读指针从当前位置向后移1234个字节
+
+ 
+
+　　file2.seekp(1234,ios::beg); //把文件的写指针从文件开头向后移1234个字节
+
+ 
+
+使用ifstream和getline读取文件内容[c++]
+
+假设有一个叫 data.txt 的文件, 它包含以下内容:
+
+                        Fry: One Jillion dollars.
+[Everyone gasps.]
+Auctioneer: Sir, that's not a number.
+数据读取， 测试 。
+
+
+以下就是基于 data.txt 的数据读取操作:
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+//输出空行
+void OutPutAnEmptyLine()
+{
+    cout<<"\n";
+}
+
+//读取方式: 逐词读取, 词之间用空格区分
+//read data from the file, Word By Word
+//when used in this manner, we'll get space-delimited bits of text from the file
+//but all of the whitespace that separated words (including newlines) was lost. 
+void ReadDataFromFileWBW()
+{
+    ifstream fin("data.txt");  
+    string s;  
+    while( fin >> s ) 
+     {    
+        cout << "Read from file: " << s << endl;  
+    }
+}
+
+//读取方式: 逐行读取, 将行读入字符数组, 行之间用回车换行区分
+//If we were interested in preserving whitespace, 
+//we could read the file in Line-By-Line using the I/O getline() function.
+void ReadDataFromFileLBLIntoCharArray()
+{
+    ifstream fin("data.txt"); 
+    const int LINE_LENGTH = 100; 
+    char str[LINE_LENGTH];  
+    while( fin.getline(str,LINE_LENGTH) )
+     {    
+        cout << "Read from file: " << str << endl;
+    }
+}
+
+//读取方式: 逐行读取, 将行读入字符串, 行之间用回车换行区分
+//If you want to avoid reading into character arrays, 
+//you can use the C++ string getline() function to read lines into strings
+void ReadDataFromFileLBLIntoString()
+{
+    ifstream fin("data.txt");  
+    string s;  
+    while( getline(fin,s) )
+     {    
+        cout << "Read from file: " << s << endl; 
+    }
+}
+
+//带错误检测的读取方式
+//Simply evaluating an I/O object in a boolean context will return false 
+//if any errors have occurred
+void ReadDataWithErrChecking()
+{
+    string filename = "dataFUNNY.txt";  
+    ifstream fin( filename.c_str());  
+    if( !fin ) 
+     {   
+        cout << "Error opening " << filename << " for input" << endl;   
+        exit(-1);  
+    }
+}
+
+int main()
+{
+    ReadDataFromFileWBW(); //逐词读入字符串 
+    OutPutAnEmptyLine(); //输出空行
+
+    ReadDataFromFileLBLIntoCharArray(); //逐词读入字符数组
+    OutPutAnEmptyLine(); //输出空行
+
+    ReadDataFromFileLBLIntoString(); //逐词读入字符串
+    OutPutAnEmptyLine(); //输出空行
+
+    ReadDataWithErrChecking(); //带检测的读取
+    return 0;
+}
+
+
+输出结果为:
+Read from file: Fry:
+Read from file: One
+Read from file: Jillion
+Read from file: dollars.
+Read from file: [Everyone
+Read from file: gasps.]
+Read from file: Auctioneer:
+Read from file: Sir,
+Read from file: that's
+Read from file: not
+Read from file: a
+Read from file: number.
+Read from file: 数据读取，
+Read from file: 测试
+Read from file: 。 
+
+Read from file: Fry: One Jillion dollars.
+Read from file: [Everyone gasps.]
+Read from file: Auctioneer: Sir, that's not a number.
+Read from file: 数据读取， 测试 。
+
+Read from file: Fry: One Jillion dollars.
+Read from file: [Everyone gasps.]
+Read from file: Auctioneer: Sir, that's not a number.
+Read from file: 数据读取， 测试 。
+
+Error opening  dataFUNNY.txt for input
+Press any key to continue
+
+ 
