@@ -1,0 +1,207 @@
+●     boost锁的概述
+
+boost库中提供了mutex类与lock类，通过组合可以轻易的构建读写锁与互斥锁。
+
+ 
+
+▲     mutex对象类
+
+mutex类主要有两种：boost::mutex，boost::shared_mutex，其中mutex有lock和unlock方法，shared_mutex除了提供lock和unlock方法外，还有shared_lock和shared_unlock方法。因此，boost::mutex为独占互斥类，boost::shared_mutex为共享互斥类。
+
+ 
+
+■     lock模板类
+
+boost::unique_lock<T>，boost::shared_lock<T>，其中unique_lock为独占锁，shared_lock为共享锁。unique_lock<T>中的T可以为mutex类中的任意一种，如果为shared_mutex，那么boost:: unique_lock<boost::shared_mutex>类的对象构造函数构造时，会自动调用shared_mutex的shared_lock方法，析构函数里，会自动调用shared_mutex的shared_unlock方法。如果是boost:: unique_lock<boost::mutex>，则分别自动调用lock和unlock方法。
+
+boost::shared_lock<T>中的T只能是shared_mutex类。
+
+ 
+
+◆     读写锁的实现
+
+typedef boost::shared_lock<boost::shared_mutex> readLock;
+
+typedef boost:: unique_lock<boost::shared_mutex> writeLock;
+
+ 
+
+boost::shared_mutex  rwmutex;
+
+ 
+
+void readOnly( )
+
+{
+
+        readLock  rdlock( rwmutex );
+
+        /// do something
+
+}
+
+ 
+
+void writeOnly( )
+
+{
+
+        writeLock  wtlock( rwmutex );
+
+        /// do something
+
+}
+
+对同一个rwmutex，线程可以同时有多个readLock，这些readLock会阻塞任意一个企图获得writeLock的线程，直到所有的readLock对象都析构。如果writeLock首先获得了rwmutex，那么它会阻塞任意一个企图在rwmutex上获得readLock或者writeLock的线程。
+
+ 
+
+★互斥锁的实现
+
+typedef boost:: unique_lock<boost::mutex> exclusiveLock;
+
+ 
+
+▼递归式的互斥量
+
+boost::recursive_mutex提供一个递归式的互斥量。对于一个实例最多允许一个线程拥有其锁定，如果一个线程已经锁定一个boost::recursive_mutex实例，那么这个线程可以多次锁定这个实例。
+
+● boost::mutex::scoped_lock
+
+boost::mutex io_mutex;
+
+void foo( )
+
+{
+
+        {
+
+                boost::mutex::scoped_lock lock( io_mutex );         /// 锁定
+
+        } /// 解锁
+
+}
+
+ 
+
+■其它
+
+boost::mutex
+
+boost::timed_mutex
+
+boost::shared_mutex
+
+boost::recursive_mutex
+
+boost::recursive_timed_mutex
+
+ 
+
+boost::lock_guard
+
+boost::shared_lock
+
+boost::upgrade_lock
+
+boost::unique_lock
+
+boost::upgrade_to_unique_lock
+
+ 
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+ 
+
+◆ QuickFix中提供了Mutex类、Locker类
+
+/// Portable implementation of a mutex.
+
+class Mutex
+
+{
+
+        Mutex( );
+
+        ~Mutex( );
+
+        void lock( );
+
+        void unlock( );
+
+};
+
+ 
+
+/// Locks/Unlocks a mutex using RAII.
+
+class Locker
+
+{
+
+        Locker( Mutex& mutex );
+
+        ~Locker( );
+
+};
+
+ 
+
+/// Does the opposite of the Locker to ensure mutex ends up in a locked state.
+
+class ReverseLocker
+
+{
+
+        ReverseLocker( Mutex& mutex );
+
+        ~ReverseLocker( );
+
+}
+
+ 
+
+● boost::lock_guard<>和boost::unique_lock<>的区别
+
+boost::mutex  m;
+
+void foo( )
+
+{
+
+        boost::lock_guard<boost::mutex> lk( m );
+
+        process( data );
+
+};
+
+lock_guard只能像上面这样使用，而unique_lock允许设置超时，推迟锁定lock以及在对象销毁之前unlock。
+
+{
+
+        boost::unique_lock<boost::mutex> lk( m );
+
+        process( data );
+
+        lk.unlock( );
+
+        // do other thing
+
+};
+
+ 
+
+★设置锁超时
+
+boost::unique_lock<boost::timed_mutex> lk( m, std::chrono::milliseconds(3) ); // 超时3秒
+
+if( lk )  process( data );
+
+ 
+
+◆ upgrade_lock类
+
+什么是upgrade_lock，它的最大特点就是与shared_lock不互斥，与别的upgrade_lock和unique_lock互斥。也就是说线程A获得mutex的upgrade_lock后，线程B、C等还可以获得mutex的share_mutex，反之亦然。
+
+不仅限于可锁定对提供的独占锁定，还支持可升级锁定。
