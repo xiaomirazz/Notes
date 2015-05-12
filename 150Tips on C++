@@ -89,3 +89,8 @@
 
 31-new内存失败后的正确处理
   catch(std::bad_alloc& e)
+
+32-了解new_handler的所作所为
+
+33-借助工具监测内存泄露问题
+
