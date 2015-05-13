@@ -93,4 +93,26 @@
 32-了解new_handler的所作所为
 
 33-借助工具监测内存泄露问题
+  Rational Purify
 
+34-小心翼翼地重载operator new和operator delete 
+  重载的原因可能：更灵活地分配，改善效率，检测代码中的内存错误，获得内存使用的统计数据。
+  如果重载了new就一定要记得重载一个对应的delete
+  
+35-用智能指针管理通过new出来的对象
+  auto_ptr弊端：
+    不可作为STL容器的元素
+    缺少对动态而来数组的支持
+    在复制的时候会发生所有权转移，旧指针对对象的管理移交给新指针
+  
+  Boost中有许多智能指针：shared_ptr unique_ptr（auto的boost版本） shared_array scoped_ptr scoped_array
+  使用的规则
+    1、smart_ptr<T>不同于T*
+      smart_ptr<T>的真实身份其实是一个对象，一个管理动态分配的对象的对象，T*是个指针
+      在创建时明确写出smart_ptr<T> t(new T)
+      禁止将T*赋值给一个智能指针
+      不要用xxx=NULL将只能指针置空，应该使用成员函数
+    2、不要使用临时的smart_ptr<T>对象
+      有资源泄露的风险
+
+36-使用内存池技术提高内存申请效率与性能
